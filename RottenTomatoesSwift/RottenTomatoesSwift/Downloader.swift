@@ -8,13 +8,7 @@
 
 import Foundation
 
-protocol DownloaderDelegate: class {
-    func downloadFinishedForURL(finishedURL: NSURL)
-}
-
 class Downloader {
-    
-    weak var delegate: DownloaderDelegate?
     
     private let session: NSURLSession = {
         let config = NSURLSessionConfiguration.defaultSessionConfiguration()
@@ -23,28 +17,29 @@ class Downloader {
     
     private var downloaded = [NSURL : NSData]()
     
-    func beginDownloadingURL(downloadURL: NSURL) {
-        self.session.dataTaskWithRequest(NSURLRequest(URL: downloadURL)) { (downloadedData, response, error) in
+    func fetchDataForURL(downloadURL: NSURL, callback: (NSURL, NSData) -> Void) {
+        // is already cached
+        if let data = self.downloaded[downloadURL] {
+            callback(downloadURL, data)
+            return
+        }
+        
+        // start downloading
+        self.session.dataTaskWithURL(downloadURL) { (downloadedData, response, error) in
             guard let downloadedData = downloadedData else {
-                NSLog("Downloader: Downloaded Data was NIL for URL: \(downloadURL)")
-                return
+                fatalError("missing data")
             }
             guard let response = response as? NSHTTPURLResponse else {
-                NSLog("Downloader: Response was not an HTTP Response for URL: \(downloadURL)")
-                return
+                fatalError("missing response")
             }
             
             switch response.statusCode {
             case 200:
                 self.downloaded[downloadURL] = downloadedData
-                self.delegate?.downloadFinishedForURL(downloadURL)
+                callback(downloadURL, downloadedData)
             default:
-                NSLog("Downloader: Received Response Code: \(response.statusCode) for URL: \(downloadURL)")
+                fatalError("incorrect response: \(response.statusCode)")
             }
         }.resume()
-    }
-    
-    func dataForURL(requestURL: NSURL) -> NSData? {
-        return self.downloaded[requestURL]
     }
 }

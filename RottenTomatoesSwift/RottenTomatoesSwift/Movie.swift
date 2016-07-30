@@ -15,26 +15,23 @@ struct Movie {
 }
 
 extension Movie {
-    static func moviesFromDictionaryArray(dictionaryArray: [NSDictionary]) -> [Movie]? {
-        var movieArray = [Movie]()
+    static func moviesFromMovieDescriptions(listOfMovieDescriptions: [NSDictionary]) -> [Movie]? {
+        var movies = [Movie]()
         
-        for dictionary in dictionaryArray {
-            if let posterDictionary = dictionary["posters"] as? NSDictionary,
-                let posterURLString = posterDictionary["thumbnail"] as? String,
-                let posterURL = NSURL(string: posterURLString) {
-                    
-                    let movieTitle = dictionary["title"] as? String ?? "Title Not Found"
-                    let movieDescription = dictionary["synopsis"] as? String ?? "Synopsys Not Found"
-                    
-                    movieArray += [Movie(title: movieTitle, description: movieDescription, posterURL: posterURL)]
+        for movieDescription in listOfMovieDescriptions {
+            guard let posterDictionary = movieDescription["posters"] as? NSDictionary,
+                  let posterURLString = posterDictionary["thumbnail"] as? String,
+                  let posterURL = NSURL(string: posterURLString) else {
+                continue
             }
+                    
+            let movieTitle = movieDescription["title"] as? String ?? "Title Not Found"
+            let description = movieDescription["synopsis"] as? String ?? "Synopsis Not Found"
+            
+            movies.append(Movie(title: movieTitle, description: description, posterURL: posterURL))
         }
         
-        if movieArray.isEmpty == false {
-            return movieArray
-        } else {
-            return .None
-        }
+        return movies
     }
 }
 
